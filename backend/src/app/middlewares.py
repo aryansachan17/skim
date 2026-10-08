@@ -11,7 +11,7 @@ from logger import logger
 from utility.metrics import REQUEST_LATENCY
 
 REQUEST_ID_PATTERN = re.compile(r"^[A-Za-z0-9._-]{1,64}$")
-QUIET_PATHS = {"/healthCheck", "/metrics"}
+QUIET_PATHS = {"/healthCheck", "/livez", "/metrics"}
 SECURITY_HEADERS = {
     "X-Content-Type-Options": "nosniff",
     "X-Frame-Options": "DENY",

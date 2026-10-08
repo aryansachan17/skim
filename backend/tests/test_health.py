@@ -22,3 +22,21 @@ def test_health_check_reports_a_down_dependency_without_leaking_details(app, cli
     assert response.json()["status"] == "degraded"
     assert response.json()["checks"] == {"mongo": "ok", "redis": "down"}
     assert "hunter2" not in response.text
+
+
+def test_liveness_answers_without_touching_dependencies(app, client):
+    class Unreachable:
+        async def ping(self):
+            raise AssertionError("liveness must not call dependencies")
+
+        @property
+        def admin(self):
+            raise AssertionError("liveness must not call dependencies")
+
+    app.state.mongo = Unreachable()
+    app.state.redis = Unreachable()
+
+    response = client.get("/livez")
+
+    assert response.status_code == 200
+    assert response.json() == {"status": "alive", "version": "dev"}
