@@ -14,3 +14,6 @@ dist/
 # Local secrets and OS files
 .env
 .DS_Store
+
+# Local assistant tooling
+.claude/
