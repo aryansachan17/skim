@@ -1,0 +1,32 @@
+[default]
+LOG_LEVEL = "INFO"
+EXPOSE_ERROR_DETAILS = false
+GRAPHQL_IDE = false
+HOST = "127.0.0.1"
+PORT = 8000
+RELOAD = false
+CORS_ORIGINS = []
+ENABLE_HSTS = false
+MONGO_URI = "mongodb://127.0.0.1:27017"
+MONGO_DB = "skim"
+REDIS_URL = "redis://127.0.0.1:6379/0"
+
+[development]
+LOG_LEVEL = "DEBUG"
+EXPOSE_ERROR_DETAILS = true
+GRAPHQL_IDE = true
+RELOAD = true
+
+[test]
+MONGO_DB = "skim_test"
+REDIS_URL = "redis://127.0.0.1:6379/1"
+
+[staging]
+HOST = "0.0.0.0"
+ENABLE_HSTS = true
+MONGO_DB = "skim_staging"
+
+[production]
+HOST = "0.0.0.0"
+ENABLE_HSTS = true
+MONGO_DB = "skim_prod"

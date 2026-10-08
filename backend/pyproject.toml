@@ -1,0 +1,41 @@
+[project]
+name = "skim-backend"
+version = "0.1.0"
+description = "Skim API and background worker"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "dynaconf>=3.3.5",
+    "fastapi>=0.142.4",
+    "prometheus-client>=0.26.0",
+    "pymongo>=4.18.2",
+    "redis>=8.1.0",
+    "strawberry-graphql[fastapi]>=0.332.0",
+    "uvicorn[standard]>=0.54.0",
+]
+
+[dependency-groups]
+dev = [
+    "httpx2>=2.13.1",
+    "pytest>=9.1.1",
+    "pytest-cov>=7.1.0",
+    "ruff>=0.16.10",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.coverage.run]
+source = ["src"]
+omit = ["src/server.py"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "S"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S101"]
