@@ -7,7 +7,10 @@ export function ApiStatus() {
   if (error || !data) return <p role="alert">API: unreachable</p>;
   return (
     <p>
-      API: {data.health.status} <small>({data.health.environment})</small>
+      API: {data.health.status}{' '}
+      <small>
+        ({data.health.environment}, {data.health.version.slice(0, 7)})
+      </small>
     </p>
   );
 }

@@ -5,6 +5,7 @@ from fastapi import APIRouter, Request, Response
 from fastapi.responses import JSONResponse
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
 
+from config import settings
 from logger import logger
 
 PING_TIMEOUT_SECONDS = 2
@@ -33,7 +34,11 @@ async def health_check(request: Request) -> JSONResponse:
     healthy = all(result == "ok" for result in checks.values())
     return JSONResponse(
         status_code=200 if healthy else 503,
-        content={"status": "ok" if healthy else "degraded", "checks": checks},
+        content={
+            "status": "ok" if healthy else "degraded",
+            "version": settings.VERSION,
+            "checks": checks,
+        },
     )
 
 

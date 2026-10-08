@@ -1,4 +1,5 @@
 [default]
+VERSION = "dev"
 LOG_LEVEL = "INFO"
 EXPOSE_ERROR_DETAILS = false
 GRAPHQL_IDE = false

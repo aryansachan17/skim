@@ -11,13 +11,18 @@ from utility.base_exceptions import BaseHTTPError
 class Health:
     status: str
     environment: str
+    version: str
 
 
 @strawberry.type
 class Query:
     @strawberry.field
     def health(self) -> Health:
-        return Health(status="ok", environment=settings.current_env.lower())
+        return Health(
+            status="ok",
+            environment=settings.current_env.lower(),
+            version=settings.VERSION,
+        )
 
 
 def should_mask_error(error: GraphQLError) -> bool:

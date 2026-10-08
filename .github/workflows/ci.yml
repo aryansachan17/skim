@@ -132,7 +132,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - name: Build the backend image
-        run: docker build --tag skim-backend:ci backend
+        run: docker build --build-arg GIT_SHA=ci-check --tag skim-backend:ci backend
       - name: The container runs as a non-root user
         run: test "$(docker run --rm skim-backend:ci id -u)" = "10001"
       - name: The container starts and answers its health check
@@ -145,4 +145,4 @@ jobs:
           done
           docker logs skim
           echo "Health check response: $body"
-          echo "$body" | grep --quiet '"status"'
+          echo "$body" | grep --quiet '"version":"ci-check"'
