@@ -1,17 +1,17 @@
 # Deployment
 
-Skim runs locally for development and on free hosting for **staging**. Production follows the same pattern later.
+## Status: hosting is paused
 
-## How a deploy happens
+Skim currently runs locally (see the README). Hosting was set up and then paused to keep the focus on backend features; the design below is kept so it can be resumed.
 
-1. A pull request is merged into `main` (branch protection requires all CI checks to pass first).
-2. CI runs again on `main`. When it passes, the **Deploy** workflow (`.github/workflows/deploy.yml`) starts.
-3. **Publish backend image:** builds `backend/` once and pushes `ghcr.io/aryansachan17/skim-backend:main-<sha>` (and `latest`). The image is stamped with the commit SHA.
-4. **Deploy to staging:** calls the API's Render deploy hook with `imgURL=…:main-<sha>`, so staging runs the exact image CI tested. It then polls `/healthCheck` until it reports `"status":"ok"` **and** `"version":"<sha>"`, and finally deploys the frontend at the same commit.
+What still happens on every merge to `main`: CI runs again, and when it passes the **Publish image** workflow (`.github/workflows/publish.yml`) builds `backend/` once and pushes `ghcr.io/aryansachan17/skim-backend:main-<sha>` and `latest`. The image is stamped with the commit SHA, which `/healthCheck`, `/livez` and the UI report.
 
-A deploy is only considered done when the running service reports the new version and healthy dependencies.
+## Resuming hosting
 
-## Staging services
+1. Restore the staging deploy job from commit `d713036` (`ci: added a staging deploy that promotes the image CI tested`). It calls the API's deploy hook with `imgURL=…:main-<sha>`, waits until `/healthCheck` reports `"status":"ok"` and `"version":"<sha>"`, then deploys the frontend at the same commit.
+2. Create the services and configuration below. Render asked for card verification when creating the web service, which is why this was paused.
+
+## Planned staging services
 
 | Piece | Where | Plan / region | Notes |
 |---|---|---|---|
@@ -74,11 +74,3 @@ Keeping frequent checks off the dependencies avoids restart loops when a depende
 - The staging API sleeps after 15 minutes without traffic; the first request afterwards takes up to a minute.
 - Upstash free: 256 MB and 500,000 commands per month.
 - Atlas M0: 512 MB storage.
-
-## Re-running a deploy
-
-From the Actions tab, open the failed **Deploy** run and choose **Re-run failed jobs**, or:
-
-```bash
-gh run rerun <run-id> --failed --repo aryansachan17/skim
-```

@@ -1,0 +1,42 @@
+name: Publish image
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish
+  cancel-in-progress: false
+
+env:
+  IMAGE_REPOSITORY: ghcr.io/aryansachan17/skim-backend
+
+jobs:
+  publish:
+    name: Publish backend image
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+      - name: Log in to GitHub Container Registry
+        env:
+          TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ACTOR: ${{ github.actor }}
+        run: echo "$TOKEN" | docker login ghcr.io --username "$ACTOR" --password-stdin
+      - name: Build and push the image
+        env:
+          SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          docker build --build-arg GIT_SHA="$SHA" --tag "$IMAGE_REPOSITORY:main-$SHA" --tag "$IMAGE_REPOSITORY:latest" backend
+          docker push "$IMAGE_REPOSITORY:main-$SHA"
+          docker push "$IMAGE_REPOSITORY:latest"
