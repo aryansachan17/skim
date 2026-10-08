@@ -42,6 +42,11 @@ async def health_check(request: Request) -> JSONResponse:
     )
 
 
+@server_router.get("/livez")
+def liveness() -> dict[str, str]:
+    return {"status": "alive", "version": settings.VERSION}
+
+
 @server_router.get("/metrics")
 def metrics() -> Response:
     return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)
