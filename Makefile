@@ -7,10 +7,10 @@ FRONTEND := frontend
 NODE24 ?= /opt/homebrew/opt/node@24/bin
 PNPM = cd $(FRONTEND) && PATH="$(NODE24):$$PATH" COREPACK_ENABLE_DOWNLOAD_PROMPT=0 corepack pnpm
 
-.PHONY: install run-api test lint format schema web-install run-web web-test web-typecheck web-build codegen check-registry
+.PHONY: install run-api test lint format schema web-install run-web web-test web-typecheck web-build web-codegen codegen check-registry
 
 install:
-	cd $(BACKEND) && uv sync
+	cd $(BACKEND) && uv sync --locked
 
 run-api:
 	cd $(BACKEND) && uv run python src/server.py
@@ -42,8 +42,10 @@ web-typecheck:
 web-build:
 	$(PNPM) build
 
-codegen: schema
+web-codegen:
 	$(PNPM) codegen
+
+codegen: schema web-codegen
 
 check-registry:
 	@hosts=$$(grep -ohE 'https://[^/"]+' $(BACKEND)/uv.lock $(FRONTEND)/pnpm-lock.yaml 2>/dev/null | sort -u \

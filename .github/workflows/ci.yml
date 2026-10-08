@@ -1,0 +1,148 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  UV_VERSION: 0.12.23
+
+jobs:
+  leak-guard:
+    name: Leak guard
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: No tracked file contains a forbidden word
+        env:
+          LEAK_PATTERNS: ${{ secrets.LEAK_PATTERNS }}
+        run: |
+          if [ -z "$LEAK_PATTERNS" ]; then
+            echo "The LEAK_PATTERNS repository secret is not set."
+            exit 1
+          fi
+          set +e
+          matches=$(git grep --files-with-matches --ignore-case --extended-regexp -e "$LEAK_PATTERNS")
+          status=$?
+          set -e
+          if [ "$status" -eq 0 ]; then
+            echo "Forbidden words found in these files:"
+            echo "$matches"
+            exit 1
+          elif [ "$status" -ne 1 ]; then
+            echo "git grep failed with exit code $status."
+            exit "$status"
+          fi
+          echo "No forbidden words found."
+
+  commit-messages:
+    name: Commit messages
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: 'Every commit follows "type(scope): summary"'
+        env:
+          EVENT: ${{ github.event_name }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+          PUSH_BEFORE: ${{ github.event.before }}
+          PUSH_AFTER: ${{ github.sha }}
+        run: |
+          if [ "$EVENT" = "pull_request" ]; then
+            range="$PR_BASE..$PR_HEAD"
+          elif [ "$PUSH_BEFORE" = "0000000000000000000000000000000000000000" ]; then
+            range="$PUSH_AFTER"
+          else
+            range="$PUSH_BEFORE..$PUSH_AFTER"
+          fi
+          pattern='^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(\([a-z0-9-]+\))?!?: .+'
+          bad=$(git log --no-merges --format=%s "$range" | grep --invert-match --extended-regexp "$pattern" || true)
+          if [ -n "$bad" ]; then
+            echo "These commit messages don't follow \"type(scope): summary\":"
+            echo "$bad"
+            exit 1
+          fi
+          echo "All commit messages follow the convention."
+
+  backend:
+    name: Backend
+    runs-on: ubuntu-latest
+    services:
+      mongo:
+        image: mongo:8
+        ports: ["27017:27017"]
+        options: >-
+          --health-cmd "mongosh --quiet --eval 'db.runCommand({ ping: 1 })'"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+      redis:
+        image: redis:8
+        ports: ["6379:6379"]
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install uv
+        run: pipx install "uv==$UV_VERSION"
+      - name: Lockfiles use public registries only
+        run: make check-registry
+      - name: Install dependencies
+        run: make install
+      - name: Lint
+        run: make lint
+      - name: Test with the 80% coverage gate
+        run: make test
+      - name: schema.graphql matches the backend code
+        run: |
+          make schema
+          git diff --exit-code -- frontend/schema.graphql
+
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: frontend/.node-version
+      - name: Install dependencies
+        run: make web-install
+      - name: Type check and build
+        run: make web-build
+      - name: Test
+        run: make web-test
+      - name: Generated GraphQL hooks match schema.graphql
+        run: |
+          make web-codegen
+          git diff --exit-code -- frontend/src
+
+  docker:
+    name: Docker image
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Build the backend image
+        run: docker build --tag skim-backend:ci backend
+      - name: The container runs as a non-root user
+        run: test "$(docker run --rm skim-backend:ci id -u)" = "10001"
+      - name: The container starts and answers its health check
+        run: |
+          docker run --detach --name skim --publish 8000:8000 skim-backend:ci
+          body=""
+          for attempt in $(seq 1 30); do
+            body=$(curl --silent --max-time 5 http://127.0.0.1:8000/healthCheck) && break
+            sleep 1
+          done
+          docker logs skim
+          echo "Health check response: $body"
+          echo "$body" | grep --quiet '"status"'
