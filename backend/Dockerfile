@@ -13,12 +13,15 @@ COPY settings.toml ./
 COPY src ./src
 
 FROM python:3.12-slim
+LABEL org.opencontainers.image.source=https://github.com/aryansachan17/skim
+ARG GIT_SHA=dev
 RUN useradd --create-home --uid 10001 skim
 WORKDIR /app
 COPY --from=build /app /app
 ENV PATH="/app/.venv/bin:$PATH" \
     PYTHONUNBUFFERED=1 \
-    SKIM_ENV=production
+    SKIM_ENV=production \
+    SKIM_VERSION=${GIT_SHA}
 USER skim
 EXPOSE 8000
 CMD ["python", "src/server.py"]

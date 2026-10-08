@@ -5,6 +5,7 @@ export const HEALTH_QUERY = gql`
     health {
       status
       environment
+      version
     }
   }
 `;

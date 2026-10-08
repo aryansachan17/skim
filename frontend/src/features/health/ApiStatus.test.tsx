@@ -10,7 +10,16 @@ describe('ApiStatus', () => {
     const mocks = [
       {
         request: { query: HealthDocument },
-        result: { data: { health: { __typename: 'Health', status: 'ok', environment: 'test' } } },
+        result: {
+          data: {
+            health: {
+              __typename: 'Health',
+              status: 'ok',
+              environment: 'staging',
+              version: '4f2c9e1a8b7d6c5e',
+            },
+          },
+        },
       },
     ];
 
@@ -22,6 +31,7 @@ describe('ApiStatus', () => {
 
     expect(screen.getByText('Checking the API…')).toBeInTheDocument();
     expect(await screen.findByText(/API: ok/)).toBeInTheDocument();
+    expect(screen.getByText('(staging, 4f2c9e1)')).toBeInTheDocument();
   });
 
   it('tells the user when the API cannot be reached', async () => {

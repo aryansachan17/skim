@@ -9,7 +9,7 @@ const defaultOptions = {} as const;
 export type HealthQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type HealthQuery = { health: { status: string, environment: string } };
+export type HealthQuery = { health: { status: string, environment: string, version: string } };
 
 
 export const HealthDocument = gql`
@@ -17,6 +17,7 @@ export const HealthDocument = gql`
   health {
     status
     environment
+    version
   }
 }
     `;

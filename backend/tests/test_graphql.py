@@ -6,10 +6,12 @@ from utility.base_exceptions import BadRequestError, ServiceUnavailableError
 
 
 def test_health_query_returns_status_and_environment(client):
-    response = client.post("/graphql", json={"query": "{ health { status environment } }"})
+    response = client.post("/graphql", json={"query": "{ health { status environment version } }"})
 
     assert response.status_code == 200
-    assert response.json() == {"data": {"health": {"status": "ok", "environment": "test"}}}
+    assert response.json() == {
+        "data": {"health": {"status": "ok", "environment": "test", "version": "dev"}}
+    }
 
 
 def test_query_mistakes_are_explained_to_the_client(client):

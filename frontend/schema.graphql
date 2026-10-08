@@ -1,6 +1,7 @@
 type Health {
   status: String!
   environment: String!
+  version: String!
 }
 
 type Query {
